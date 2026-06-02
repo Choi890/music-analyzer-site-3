@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="브라우저에서 음악 파일을 분석하고 파형, 스펙트럼, 스펙트로그램, BPM, 키, 라우드니스, 감성 지표를 시각화하는 웹사이트" />
+  <title>Auralis Studio | 음악 분석 시각화</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar" aria-label="사이트 상단">
+      <a class="brand" href="#top" aria-label="Auralis Studio 홈">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>
+          <strong>Auralis Studio</strong>
+          <small>music analyzer</small>
+        </span>
+      </a>
+      <div class="status-pill" aria-live="polite">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">로컬 분석 대기</span>
+      </div>
+    </header>
+
+    <section class="studio-layout" id="top">
+      <section class="upload-pane" id="drop-zone" aria-labelledby="hero-title">
+        <div class="sound-mark" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <p class="eyebrow">LOCAL AUDIO ANALYSIS</p>
+        <h1 id="hero-title">Music Analyzer</h1>
+        <p class="hero-copy">파형, 스펙트럼, 스펙트로그램, BPM, 키, 라우드니스, 다이내믹 레인지와 감성 지표를 브라우저에서 바로 분석합니다.</p>
+        <div class="upload-actions">
+          <label class="primary-action" for="audio-file">
+            <span aria-hidden="true">↑</span>
+            <span>음악 선택</span>
+          </label>
+          <button class="ghost-action" id="reset-button" type="button" hidden>초기화</button>
+        </div>
+        <input id="audio-file" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac" />
+        <div class="format-row" aria-label="지원 형식">
+          <span>MP3</span>
+          <span>WAV</span>
+          <span>M4A</span>
+          <span>AAC</span>
+          <span>OGG</span>
+          <span>FLAC</span>
+        </div>
+      </section>
+
+      <section class="player-pane" aria-label="현재 음악">
+        <div class="reactor" id="reactor" aria-hidden="true">
+          <div class="reactor-ring"></div>
+          <div class="reactor-core">
+            <strong id="reactor-bpm">--</strong>
+            <span>BPM</span>
+          </div>
+        </div>
+        <div class="track-copy">
+          <p id="track-kicker">분석 대기</p>
+          <h2 id="track-name">아직 선택된 파일이 없습니다</h2>
+          <p id="track-subtitle">파일을 선택하면 결과가 이곳에 정리됩니다.</p>
+        </div>
+        <audio id="audio-player" controls preload="metadata"></audio>
+        <div class="live-meter" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </section>
+    </section>
+
+    <section class="metric-grid" aria-label="핵심 분석 결과">
+      <article class="metric-tile">
+        <span class="metric-label">길이</span>
+        <strong id="duration-value">--:--</strong>
+        <small id="duration-note">duration</small>
+        <span class="metric-meter"><i id="duration-meter"></i></span>
+      </article>
+      <article class="metric-tile">
+        <span class="metric-label">BPM</span>
+        <strong id="tempo-value">--</strong>
+        <small id="tempo-note">tempo</small>
+        <span class="metric-meter"><i id="tempo-meter"></i></span>
+      </article>
+      <article class="metric-tile">
+        <span class="metric-label">키</span>
+        <strong id="key-value">--</strong>
+        <small id="key-note">tonality</small>
+        <span class="metric-meter"><i id="key-meter"></i></span>
+      </article>
+      <article class="metric-tile">
+        <span class="metric-label">라우드니스</span>
+        <strong id="loudness-value">-- dBFS</strong>
+        <small id="loudness-note">RMS</small>
+        <span class="metric-meter"><i id="loudness-meter"></i></span>
+      </article>
+      <article class="metric-tile">
+        <span class="metric-label">다이내믹</span>
+        <strong id="dynamic-value">-- dB</strong>
+        <small id="dynamic-note">range</small>
+        <span class="metric-meter"><i id="dynamic-meter"></i></span>
+      </article>
+      <article class="metric-tile">
+        <span class="metric-label">중심 주파수</span>
+        <strong id="centroid-value">-- Hz</strong>
+        <small id="centroid-note">centroid</small>
+        <span class="metric-meter"><i id="centroid-meter"></i></span>
+      </article>
+      <article class="metric-tile">
+        <span class="metric-label">스테레오 폭</span>
+        <strong id="stereo-value">--</strong>
+        <small id="stereo-note">width</small>
+        <span class="metric-meter"><i id="stereo-meter"></i></span>
+      </article>
+      <article class="metric-tile">
+        <span class="metric-label">클리핑</span>
+        <strong id="clip-value">--%</strong>
+        <small id="clip-note">peak risk</small>
+        <span class="metric-meter"><i id="clip-meter"></i></span>
+      </article>
+    </section>
+
+    <section class="visual-grid" aria-label="음악 시각화">
+      <article class="panel panel-wide">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">시간 도메인</p>
+            <h2>Waveform</h2>
+          </div>
+          <span id="waveform-tag">대기</span>
+        </div>
+        <canvas id="waveform-canvas" aria-label="파형 그래프"></canvas>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">주파수 도메인</p>
+            <h2>Spectrum</h2>
+          </div>
+          <span id="spectrum-tag">대기</span>
+        </div>
+        <canvas id="spectrum-canvas" aria-label="주파수 스펙트럼"></canvas>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">시간 x 주파수</p>
+            <h2>Spectrogram</h2>
+          </div>
+          <span id="spectrogram-tag">대기</span>
+        </div>
+        <canvas id="spectrogram-canvas" aria-label="스펙트로그램"></canvas>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">음압 흐름</p>
+            <h2>Loudness Curve</h2>
+          </div>
+          <span id="loudness-tag">대기</span>
+        </div>
+        <canvas id="loudness-canvas" aria-label="라우드니스 곡선"></canvas>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">대역 밸런스</p>
+            <h2>Frequency Bands</h2>
+          </div>
+          <span id="bands-tag">대기</span>
+        </div>
+        <div class="band-list" id="band-list"></div>
+      </article>
+    </section>
+
+    <section class="insight-grid" aria-label="상세 분석">
+      <article class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">파일 정보</p>
+            <h2>Metadata</h2>
+          </div>
+        </div>
+        <dl class="metadata-list" id="metadata-list">
+          <div>
+            <dt>상태</dt>
+            <dd>업로드 대기</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">감성 해석</p>
+            <h2>Mood Report</h2>
+          </div>
+          <span id="mood-tag">대기</span>
+        </div>
+        <p class="mood-copy" id="mood-copy">분석할 음악을 선택하면 에너지, 밝기, 공간감, 리듬 밀도를 바탕으로 사운드 인상을 정리합니다.</p>
+        <div class="trait-list" id="trait-list"></div>
+      </article>
+
+      <article class="panel panel-tall">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">추정 태그</p>
+            <h2>Sound Signature</h2>
+          </div>
+          <span id="signature-tag">대기</span>
+        </div>
+        <div class="signature-grid" id="signature-grid">
+          <span>analysis</span>
+          <span>sound</span>
+          <span>mood</span>
+          <span>tone</span>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script src="script.js"></script>
+</body>
+</html>
