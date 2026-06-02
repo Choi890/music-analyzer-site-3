@@ -125,6 +125,7 @@ function handleDrop(event) {
 }
 
 async function handleFile(file) {
+  // The full analysis pipeline is sequenced with frame yields so large files do not freeze the UI.
   if (!isAudioFile(file)) {
     showToast('오디오 파일을 선택해 주세요.');
     return;
@@ -231,6 +232,7 @@ async function decodeAudio(arrayBuffer) {
 }
 
 function createMonoSignal(buffer) {
+  // Downmix once so waveform, loudness, tempo, and spectrum use the same reference signal.
   const length = buffer.length;
   const channels = buffer.numberOfChannels;
   if (channels === 1) {
@@ -385,6 +387,7 @@ function estimateTempo(samples, sampleRate) {
 }
 
 function analyzeSpectrum(samples, sampleRate) {
+  // Average several FFT frames to describe the whole track instead of a single intro slice.
   const fftSize = 4096;
   const frameCount = Math.min(90, Math.max(12, Math.floor(samples.length / sampleRate)));
   const magnitudes = new Float32Array(fftSize / 2);
@@ -1177,6 +1180,7 @@ function parseAudioTags(arrayBuffer, file) {
 }
 
 function parseId3(arrayBuffer) {
+  // Minimal ID3 parsing keeps the app dependency-free while still surfacing core track tags.
   const view = new DataView(arrayBuffer);
   if (view.byteLength < 10 || readAscii(view, 0, 3) !== 'ID3') return {};
 
