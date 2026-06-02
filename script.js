@@ -125,7 +125,8 @@ function handleDrop(event) {
 }
 
 async function handleFile(file) {
-  // The full analysis pipeline is sequenced with frame yields so large files do not freeze the UI.
+  // 파일 하나에 대해 메타데이터, 파형, 라우드니스, BPM, 스펙트럼, 키 추정을 순서대로 실행한다.
+  // 단계 사이에 nextFrame을 넣어 큰 파일을 분석해도 브라우저 화면이 완전히 멈추지 않게 한다.
   if (!isAudioFile(file)) {
     showToast('오디오 파일을 선택해 주세요.');
     return;
@@ -232,7 +233,8 @@ async function decodeAudio(arrayBuffer) {
 }
 
 function createMonoSignal(buffer) {
-  // Downmix once so waveform, loudness, tempo, and spectrum use the same reference signal.
+  // 여러 채널을 하나의 mono 신호로 합친다.
+  // 이후 파형, 라우드니스, BPM, 스펙트럼 분석이 모두 같은 기준 신호를 사용해 결과가 서로 어긋나지 않는다.
   const length = buffer.length;
   const channels = buffer.numberOfChannels;
   if (channels === 1) {
@@ -387,7 +389,8 @@ function estimateTempo(samples, sampleRate) {
 }
 
 function analyzeSpectrum(samples, sampleRate) {
-  // Average several FFT frames to describe the whole track instead of a single intro slice.
+  // 트랙 여러 지점에서 FFT를 수행하고 평균을 내어 전체적인 음색을 추정한다.
+  // 특정 구간의 악기나 무음에 치우치지 않게 하기 위한 장치다.
   const fftSize = 4096;
   const frameCount = Math.min(90, Math.max(12, Math.floor(samples.length / sampleRate)));
   const magnitudes = new Float32Array(fftSize / 2);
@@ -1180,7 +1183,8 @@ function parseAudioTags(arrayBuffer, file) {
 }
 
 function parseId3(arrayBuffer) {
-  // Minimal ID3 parsing keeps the app dependency-free while still surfacing core track tags.
+  // MP3 ID3 태그를 직접 읽어 제목, 아티스트, 앨범 같은 기본 정보를 뽑는다.
+  // 별도 메타데이터 라이브러리 없이도 핵심 표시 정보만 제공하려는 최소 파서다.
   const view = new DataView(arrayBuffer);
   if (view.byteLength < 10 || readAscii(view, 0, 3) !== 'ID3') return {};
 
